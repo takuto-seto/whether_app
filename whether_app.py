@@ -1,37 +1,31 @@
 import streamlit as st
 import pandas as pd
-import chardet
+import io
 
-st.title("天気予測アプリ（CSVアップロード版）")
-
-uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type=["csv"])
+uploaded_file = st.file_uploader("CSVファイルをアップロード", type="csv")
 
 if uploaded_file is not None:
-    # 文字コード推定
-    rawdata = uploaded_file.read()
-    result = chardet.detect(rawdata)
-    encoding = result['encoding']
-    st.write(f"推定エンコーディング: {encoding}")
+    # バイト列を読み込む（ストリームのポインタ問題を回避）
+    bytes_data = uploaded_file.read()
 
-    uploaded_file.seek(0)
+    # BytesIOオブジェクトに変換
+    data = io.BytesIO(bytes_data)
+
+    # 文字コードを推測（任意）
+    # import chardet
+    # result = chardet.detect(bytes_data)
+    # encoding = result['encoding']
+
+    # pandasで読み込み（encodingは必要に応じて指定）
     try:
-        df = pd.read_csv(uploaded_file, encoding=encoding)
+        df = pd.read_csv(data, encoding='utf-8')  # utf-8以外なら適宜変更
+        st.write("読み込み成功！")
+        st.write(df.head())
+    except UnicodeDecodeError:
+        # 失敗したら別エンコーディングで試す
+        data.seek(0)
+        df = pd.read_csv(data, encoding='shift_jis')
+        st.write("Shift_JISで読み込み成功！")
+        st.write(df.head())
     except Exception as e:
-        st.error(f"CSV読み込みエラー: {e}")
-        st.stop()
-
-    st.write("アップロードされたデータ:")
-    st.write(df.head())
-
-    if "平均気温(℃)" in df.columns:
-        def simple_weather_predict(temp):
-            if temp >= 25:
-                return "晴れ"
-            else:
-                return "曇り"
-
-        df["予測天気"] = df["平均気温(℃)"].apply(simple_weather_predict)
-        st.write("予測結果:")
-        st.write(df[["平均気温(℃)", "予測天気"]])
-    else:
-        st.warning("「平均気温(℃)」列がありません。予測できません。")
+        st.error(f"読み込みエラー: {e}")
