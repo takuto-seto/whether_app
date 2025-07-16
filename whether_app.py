@@ -1,22 +1,28 @@
-# weather_app.py
 import streamlit as st
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 
-st.title("天気・気温・湿度予測アプリ")
+st.title("天気予測アプリ（CSVアップロード版）")
 
-# ユーザー入力
-target_date = st.date_input("予測したい日付", value=datetime.today() + timedelta(days=1))
+uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type=["csv"])
 
-# ダミー予測（本来はモデルで予測）
-np.random.seed(target_date.day)
-temp = np.random.normal(25, 5)
-humidity = np.random.uniform(40, 90)
-weather = np.random.choice(["晴れ", "曇り", "雨"])
+if uploaded_file is not None:
+    # CSV読み込み（ヘッダー調整は適宜）
+    df = pd.read_csv(uploaded_file, header=0)
+    st.write("アップロードされたデータ:")
+    st.write(df.head())
 
-# 結果表示
-st.subheader(f"{target_date.strftime('%Y/%m/%d')} の予測結果")
-st.metric("気温 (℃)", f"{temp:.1f}")
-st.metric("湿度 (%)", f"{humidity:.0f}")
-st.metric("天気", weather)
+    # ここでは例として「平均気温(℃)」列があると仮定
+    if "平均気温(℃)" in df.columns:
+        # 簡単な予測ルール：平均気温が25度以上なら「晴れ」、そうでなければ「曇り」
+        def simple_weather_predict(temp):
+            if temp >= 25:
+                return "晴れ"
+            else:
+                return "曇り"
+
+        df["予測天気"] = df["平均気温(℃)"].apply(simple_weather_predict)
+
+        st.write("予測結果:")
+        st.write(df[["平均気温(℃)", "予測天気"]])
+    else:
+        st.warning("データに「平均気温(℃)」列がありません。予測できません。")
