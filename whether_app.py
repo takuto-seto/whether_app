@@ -81,4 +81,5 @@ if uploaded_file is not None:
     df2["予測天気"] = df2[target_col].apply(weather_predict_from_text)
 
     st.subheader("予測結果")
-    st.dataframe(df2[[target_col, "予測天気"]], use_container_width=Tr_]()]()
+st.dataframe(df2[[target_col, "予測天気"]], use_container_width=True)
+
