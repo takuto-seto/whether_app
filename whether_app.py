@@ -2,21 +2,24 @@ import streamlit as st
 import pandas as pd
 import io
 
-st.title("🌤️ 天気予測アプリ（CSVアップロード版）")
-st.write("""
-アップロードしたCSVファイルの「平均気温(℃)」を使って簡単に天気を予測します。  
-予測は単純なルールベースですので、モデルを変えたい場合はご相談ください。
-""")
+st.title("天気予測アプリ（天気概況列から予測）")
 
-uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type=["csv"])
+uploaded_file = st.file_uploader("CSVファイルをアップロード", type=["csv"])
 
-def simple_weather_predict(temp):
-    if temp >= 25:
+def weather_predict_from_text(text):
+    if pd.isna(text):
+        return "不明"
+    text = text.lower()
+    if any(word in text for word in ["晴", "sunny", "clear"]):
         return "☀️ 晴れ"
-    elif temp >= 15:
+    elif any(word in text for word in ["曇", "cloud", "cloudy"]):
         return "⛅ 曇り"
-    else:
+    elif any(word in text for word in ["雨", "rain", "shower", "storm"]):
         return "🌧️ 雨"
+    elif any(word in text for word in ["雪", "snow"]):
+        return "❄️ 雪"
+    else:
+        return "不明"
 
 if uploaded_file is not None:
     bytes_data = uploaded_file.read()
@@ -27,33 +30,31 @@ if uploaded_file is not None:
         try:
             data.seek(0)
             df = pd.read_csv(data, encoding=encoding)
-            st.success(f"ファイルを {encoding} エンコードで読み込みました。")
+            st.success(f"ファイルを {encoding} で読み込みました。")
             break
-        except UnicodeDecodeError:
+        except Exception:
             pass
     else:
-        st.error("全てのエンコーディングでの読み込みに失敗しました。")
+        st.error("読み込みに失敗しました。")
         st.stop()
 
-    st.subheader("アップロードされたデータプレビュー")
+    st.subheader("データプレビュー")
     st.dataframe(df.head(), use_container_width=True)
 
-    if "平均気温(℃)" in df.columns:
-        df["予測天気"] = df["平均気温(℃)"].apply(simple_weather_predict)
+    target_col = None
+    # 天気の列を自動検出（名前に「天気」や「概況」が含まれている列を探す）
+    for col in df.columns:
+        if "天気" in col or "概況" in col:
+            target_col = col
+            break
 
-        st.subheader("天気予測結果")
-        # カラフルに表示するためのスタイル関数
-        def highlight_weather(val):
-            color = {
-                "☀️ 晴れ": "background-color: #FFF59D;",  # 黄色
-                "⛅ 曇り": "background-color: #90CAF9;",  # 水色
-                "🌧️ 雨": "background-color: #A5D6A7;",  # 緑
-            }
-            return color.get(val, "")
+    if target_col is None:
+        st.warning("天気概況を示す列が見つかりません。")
+        st.stop()
 
-        st.dataframe(
-            df[["平均気温(℃)", "予測天気"]].style.applymap(highlight_weather),
-            use_container_width=True
-        )
-    else:
-        st.warning("データに「平均気温(℃)」列がありません。予測できません。")
+    st.write(f"予測に使用する列：{target_col}")
+
+    df["予測天気"] = df[target_col].apply(weather_predict_from_text)
+
+    st.subheader("予測結果")
+    st.dataframe(df[[target_col, "予測天気"]], use_container_width=True)
