@@ -1,4 +1,5 @@
 streamlit
-requests
-pyyaml
+pandas
+scikit-learn
 streamlit-authenticator
+pyyaml
