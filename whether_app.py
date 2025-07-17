@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
 # データ読み込み
-df = pd.read_csv("weather.csv")
+df = pd.read_csv("data.csv")
 df.dropna(inplace=True)
 
 # 日付変換（オプション）
