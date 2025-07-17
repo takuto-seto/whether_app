@@ -68,7 +68,7 @@ def login_screen():
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success(f"ようこそ、{username} さん！")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("ユーザー名またはパスワードが違います。")
 
@@ -89,14 +89,14 @@ def main_app():
     if st.sidebar.button("ログアウト"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.experimental_rerun()
+        st.rerun()
 
     if st.sidebar.button("このアカウントを削除"):
         if delete_user(st.session_state.username):
             st.success("アカウントを削除しました。")
             st.session_state.logged_in = False
             st.session_state.username = ""
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("削除に失敗しました。")
 
